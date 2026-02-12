@@ -22,7 +22,7 @@ use std::slice;
 use culpa::{throw, throws};
 use libc::{c_int, c_void};
 
-use ndarray::{Array, ArrayD, ArrayView, Dimension, IxDyn};
+use ndarray::{Array, ArrayD, Dimension, IxDyn};
 use num_traits::Zero;
 
 #[repr(transparent)]
@@ -184,12 +184,23 @@ impl Model {
     }
 
     #[throws(TreeRiteError)]
-    pub fn predict<A, D>(&self, config: &GTIConfig, input: ArrayView<A, D>) -> ArrayD<A>
+    pub fn predict<A, D>(
+        &self,
+        config: &GTIConfig,
+        input: &Array<A, D>,
+        num_rows: Option<usize>,
+    ) -> ArrayD<A>
     where
         A: TypeName + Clone + Zero,
         D: Dimension,
     {
-        let nrows = input.shape()[0];
+        let nrows: usize;
+        if let Some(num_rows) = num_rows {
+            nrows = num_rows;
+        } else {
+            nrows = input.shape()[0];
+        }
+
         let dims = self.get_output_shape(config, nrows)?;
         let mut output = Array::zeros(IxDyn(&dims));
         unsafe {
