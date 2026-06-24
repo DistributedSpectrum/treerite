@@ -1,1 +1,4 @@
+# prevent later inheritance of gh workflows
+.github/
+
 /target
