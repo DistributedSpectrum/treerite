@@ -1,3 +1,4 @@
 [submodule "treelite"]
 	path = treelite
 	url = https://github.com/DistributedSpectrum/treelite
+	branch = dev/standardization
