@@ -17,14 +17,14 @@ culpa = "1"
 libc = "0.2"
 ndarray = "0.16"
 num-traits = "0.2"
-thiserror = "2"
+thiserror = "1"
 
 [build-dependencies]
 cmake = "0.1"
-bindgen = "0.72"
+bindgen = "0.70"
 
 [dev-dependencies]
-criterion = "0.6"
+criterion = "0.5"
 
 [[bench]]
 harness = false

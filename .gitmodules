@@ -1,3 +1,3 @@
 [submodule "treelite"]
 	path = treelite
-	url = ../treelite.git
+	url = https://github.com/DistributedSpectrum/treelite

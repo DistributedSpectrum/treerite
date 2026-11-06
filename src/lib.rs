@@ -22,7 +22,7 @@ use std::slice;
 use culpa::{throw, throws};
 use libc::{c_int, c_void};
 
-use ndarray::{Array, ArrayD, ArrayView, Dimension, IxDyn};
+use ndarray::{Array, ArrayD, Dimension, IxDyn};
 use num_traits::Zero;
 
 #[repr(transparent)]
@@ -184,12 +184,32 @@ impl Model {
     }
 
     #[throws(TreeRiteError)]
-    pub fn predict<A, D>(&self, config: &GTIConfig, input: ArrayView<A, D>) -> ArrayD<A>
+    pub fn predict<A, D>(
+        &self,
+        config: &GTIConfig,
+        input: &Array<A, D>,
+        num_rows: Option<usize>,
+    ) -> ArrayD<A>
     where
         A: TypeName + Clone + Zero,
         D: Dimension,
     {
-        let nrows = input.shape()[0];
+        // GTIL reads a dense, row-major buffer without receiving its length.
+        // Validate before crossing FFI, including explicit row-count overrides.
+        if !input.is_standard_layout() {
+            throw!(TreeRiteError::DataNotCContiguous);
+        }
+        let nrows = num_rows.or_else(|| input.shape().first().copied())
+            .ok_or_else(|| TreeRiteError::InvalidInputShape("scalar input has no rows".into()))?;
+        let mut features: c_int = 0;
+        unsafe { sys::TreeliteQueryNumFeature(self.0, &mut features).check()? };
+        if features < 0 || nrows.checked_mul(features as usize) != Some(input.len()) {
+            throw!(TreeRiteError::InvalidInputShape(format!(
+                "{nrows} rows with {features} features require a matching dense buffer; got {} elements",
+                input.len()
+            )));
+        }
+
         let dims = self.get_output_shape(config, nrows)?;
         let mut output = Array::zeros(IxDyn(&dims));
         unsafe {
