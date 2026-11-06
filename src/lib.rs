@@ -194,11 +194,20 @@ impl Model {
         A: TypeName + Clone + Zero,
         D: Dimension,
     {
-        let nrows: usize;
-        if let Some(num_rows) = num_rows {
-            nrows = num_rows;
-        } else {
-            nrows = input.shape()[0];
+        // GTIL reads a dense, row-major buffer without receiving its length.
+        // Validate before crossing FFI, including explicit row-count overrides.
+        if !input.is_standard_layout() {
+            throw!(TreeRiteError::DataNotCContiguous);
+        }
+        let nrows = num_rows.or_else(|| input.shape().first().copied())
+            .ok_or_else(|| TreeRiteError::InvalidInputShape("scalar input has no rows".into()))?;
+        let mut features: c_int = 0;
+        unsafe { sys::TreeliteQueryNumFeature(self.0, &mut features).check()? };
+        if features < 0 || nrows.checked_mul(features as usize) != Some(input.len()) {
+            throw!(TreeRiteError::InvalidInputShape(format!(
+                "{nrows} rows with {features} features require a matching dense buffer; got {} elements",
+                input.len()
+            )));
         }
 
         let dims = self.get_output_shape(config, nrows)?;

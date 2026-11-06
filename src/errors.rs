@@ -15,6 +15,9 @@ pub enum TreeRiteError {
     #[error(transparent)]
     ShapeError(#[from] ndarray::ShapeError),
 
+    #[error("Invalid prediction input: {0}")]
+    InvalidInputShape(String),
+
     #[error("Data is not C contiguous")]
     DataNotCContiguous,
 }

@@ -69,7 +69,7 @@ fn main() {
     )
     .unwrap();
 
-    let y = model.predict(&config, &input).unwrap();
+    let y = model.predict(&config, &input, None).unwrap();
 
     println!("{:?}", y);
 }
